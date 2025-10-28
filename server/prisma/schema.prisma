@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  username     String        @unique
+  createdAt    DateTime      @default(now())
+  quizAttempts QuizAttempt[]
+
+  @@map("users")
+}
+
+model QuizCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String
+  icon        String
+  createdAt   DateTime @default(now())
+  quizzes     Quiz[]
+
+  @@map("quiz_categories")
+}
+
+model Quiz {
+  id          String        @id @default(uuid())
+  categoryId  String
+  title       String
+  description String
+  difficulty  String        @default("beginner") // beginner, intermediate, advanced
+  createdAt   DateTime      @default(now())
+  category    QuizCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  attempts    QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  quizId        String
+  question      String
+  options       String   // JSON string of options
+  correctAnswer String
+  explanation   String
+  order         Int
+  createdAt     DateTime @default(now())
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers       Answer[]
+
+  @@map("questions")
+}
+
+model QuizAttempt {
+  id          String    @id @default(uuid())
+  userId      String
+  quizId      String
+  score       Int       @default(0)
+  percentage  Float     @default(0)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz        Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers     Answer[]
+
+  @@map("quiz_attempts")
+}
+
+model Answer {
+  id         String      @id @default(uuid())
+  attemptId  String
+  questionId String
+  userAnswer String
+  isCorrect  Boolean
+  createdAt  DateTime    @default(now())
+  attempt    QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("answers")
+}
