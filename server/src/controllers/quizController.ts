@@ -20,9 +20,15 @@ export const getQuizzes = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
+  // Map Prisma results to typed Quiz[] with proper difficulty type
+  const typedQuizzes: Quiz[] = quizzes.map((quiz) => ({
+    ...quiz,
+    difficulty: quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+  }));
+
   const response: ApiResponse<Quiz[]> = {
     success: true,
-    data: quizzes as any,
+    data: typedQuizzes,
   };
 
   res.json(response);
@@ -42,9 +48,15 @@ export const getQuiz = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError(404, ERROR_MESSAGES.QUIZ_NOT_FOUND);
   }
 
+  // Map Prisma result to typed Quiz with proper difficulty type
+  const typedQuiz: Quiz = {
+    ...quiz,
+    difficulty: quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+  };
+
   const response: ApiResponse<Quiz> = {
     success: true,
-    data: quiz,
+    data: typedQuiz,
   };
 
   res.json(response);

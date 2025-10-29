@@ -2,10 +2,41 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { getCategories } from '../services/api';
-import { QuizCategory } from '@ai-quiz-app/shared';
+import { QuizCategory, USERNAME_VALIDATION, ERROR_MESSAGES } from '@ai-quiz-app/shared';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
+
+/**
+ * Validates a username according to the application's requirements.
+ * @param username - The username to validate
+ * @returns An error message if validation fails, or null if valid
+ */
+const validateUsername = (username: string): string | null => {
+  const trimmed = username.trim();
+
+  if (trimmed.length === 0) {
+    return 'Username is required';
+  }
+
+  if (trimmed.length < USERNAME_VALIDATION.MIN_LENGTH) {
+    return ERROR_MESSAGES.USERNAME_TOO_SHORT;
+  }
+
+  if (trimmed.length > USERNAME_VALIDATION.MAX_LENGTH) {
+    return ERROR_MESSAGES.USERNAME_TOO_LONG;
+  }
+
+  if (/\s/.test(trimmed)) {
+    return 'Username cannot contain spaces';
+  }
+
+  if (!USERNAME_VALIDATION.PATTERN.test(trimmed)) {
+    return ERROR_MESSAGES.USERNAME_INVALID_FORMAT;
+  }
+
+  return null; // Valid
+};
 
 const HomePage: React.FC = () => {
   const { user, createUser, loginUser } = useUser();
@@ -34,7 +65,13 @@ const HomePage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
+
+    // Client-side validation
+    const validationError = validateUsername(username);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     setCreating(true);
     setError('');
@@ -118,7 +155,16 @@ const HomePage: React.FC = () => {
                   className="input"
                   required
                   disabled={creating}
+                  minLength={USERNAME_VALIDATION.MIN_LENGTH}
+                  maxLength={USERNAME_VALIDATION.MAX_LENGTH}
+                  pattern={USERNAME_VALIDATION.PATTERN.source}
+                  title={USERNAME_VALIDATION.PATTERN_DESCRIPTION}
                 />
+                {!isLogin && (
+                  <p className="mt-2 text-left text-xs text-gray-500">
+                    {USERNAME_VALIDATION.MIN_LENGTH}-{USERNAME_VALIDATION.MAX_LENGTH} characters. Letters, numbers, and {USERNAME_VALIDATION.ALLOWED_SPECIAL_CHARS} allowed. No spaces.
+                  </p>
+                )}
               </div>
               {error && (
                 <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">

@@ -43,7 +43,16 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
     categoryScores[category] = categoryScores[category] / categoryCount[category];
   });
 
-  const recommendation = await aiService.generateRecommendation(attempts, {
+  // Map Prisma results to typed QuizAttempt[] with proper difficulty type
+  const typedAttempts = attempts.map((attempt) => ({
+    ...attempt,
+    quiz: {
+      ...attempt.quiz,
+      difficulty: attempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+    },
+  }));
+
+  const recommendation = await aiService.generateRecommendation(typedAttempts, {
     averageScore,
     categoryScores,
   });

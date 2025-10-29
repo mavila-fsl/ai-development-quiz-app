@@ -146,6 +146,9 @@ Vite proxy configured in `client/vite.config.ts` to proxy `/api` to port 3001
 
 ## Key Patterns and Conventions
 
+### Formats validation
+- The username must be an alphanumeric string between 4 and 40 characters long and cannot contain spaces or special characters, except for the following: [@-_.]
+
 ### Quiz Flow
 1. User creates account (POST /api/users)
 2. Fetches categories (GET /api/categories)

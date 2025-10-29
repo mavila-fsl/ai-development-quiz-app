@@ -38,9 +38,18 @@ export const startAttempt = asyncHandler(async (req: Request, res: Response) => 
     },
   });
 
+  // Map Prisma result to typed QuizAttempt with proper difficulty type
+  const typedAttempt: QuizAttempt = {
+    ...attempt,
+    quiz: {
+      ...attempt.quiz,
+      difficulty: attempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+    },
+  };
+
   const response: ApiResponse<QuizAttempt> = {
     success: true,
-    data: attempt,
+    data: typedAttempt,
     message: 'Quiz attempt started',
   };
 
@@ -128,8 +137,8 @@ export const completeAttempt = asyncHandler(async (req: Request, res: Response) 
     },
   });
 
-  // Generate feedback
-  let feedback = PERFORMANCE_MESSAGES.NEEDS_IMPROVEMENT;
+  // Generate feedback - type as string to avoid literal type conflicts
+  let feedback: string = PERFORMANCE_MESSAGES.NEEDS_IMPROVEMENT;
   if (percentage >= PERFORMANCE_THRESHOLDS.EXCELLENT) {
     feedback = PERFORMANCE_MESSAGES.EXCELLENT;
   } else if (percentage >= PERFORMANCE_THRESHOLDS.GOOD) {
@@ -138,8 +147,17 @@ export const completeAttempt = asyncHandler(async (req: Request, res: Response) 
     feedback = PERFORMANCE_MESSAGES.AVERAGE;
   }
 
+  // Map Prisma result to typed QuizAttempt with proper difficulty type
+  const typedUpdatedAttempt: QuizAttempt = {
+    ...updatedAttempt,
+    quiz: {
+      ...updatedAttempt.quiz,
+      difficulty: updatedAttempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+    },
+  };
+
   const result: QuizResult = {
-    attempt: updatedAttempt,
+    attempt: typedUpdatedAttempt,
     score: correctCount,
     percentage,
     totalQuestions,
@@ -182,9 +200,18 @@ export const getAttempt = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError(404, ERROR_MESSAGES.ATTEMPT_NOT_FOUND);
   }
 
+  // Map Prisma result to typed QuizAttempt with proper difficulty type
+  const typedAttempt: QuizAttempt = {
+    ...attempt,
+    quiz: {
+      ...attempt.quiz,
+      difficulty: attempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+    },
+  };
+
   const response: ApiResponse<QuizAttempt> = {
     success: true,
-    data: attempt as any,
+    data: typedAttempt,
   };
 
   res.json(response);
@@ -207,9 +234,18 @@ export const getUserAttempts = asyncHandler(async (req: Request, res: Response) 
     },
   });
 
+  // Map Prisma results to typed QuizAttempt[] with proper difficulty type
+  const typedAttempts: QuizAttempt[] = attempts.map((attempt) => ({
+    ...attempt,
+    quiz: {
+      ...attempt.quiz,
+      difficulty: attempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+    },
+  }));
+
   const response: ApiResponse<QuizAttempt[]> = {
     success: true,
-    data: attempts,
+    data: typedAttempts,
   };
 
   res.json(response);

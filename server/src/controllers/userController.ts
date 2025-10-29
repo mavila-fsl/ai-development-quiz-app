@@ -12,7 +12,7 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
   });
 
   if (existingUser) {
-    throw new AppError(400, 'Username already exists');
+    throw new AppError(400, ERROR_MESSAGES.USERNAME_ALREADY_EXISTS);
   }
 
   const user = await prisma.user.create({
@@ -55,7 +55,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   });
 
   if (!user) {
-    throw new AppError(404, 'User not found. Please check your username or create a new account.');
+    throw new AppError(404, ERROR_MESSAGES.USER_NOT_FOUND);
   }
 
   const response: ApiResponse<User> = {
@@ -126,12 +126,22 @@ export const getUserStats = asyncHandler(async (req: Request, res: Response) => 
     averageScore: data.totalScore / data.attempts,
   }));
 
+  // Map Prisma results to our typed QuizAttempt interface
+  // Cast difficulty from string to literal union type
+  const typedRecentAttempts = attempts.slice(0, 10).map((attempt) => ({
+    ...attempt,
+    quiz: {
+      ...attempt.quiz,
+      difficulty: attempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+    },
+  }));
+
   const stats: UserStats = {
     totalAttempts,
     totalQuizzes,
     averageScore,
     bestScore,
-    recentAttempts: attempts.slice(0, 10),
+    recentAttempts: typedRecentAttempts,
     categoryPerformance,
   };
 

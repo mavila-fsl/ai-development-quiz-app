@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id           String        @id @default(uuid())
-  username     String        @unique
+  username     String        @unique // 4-40 chars, alphanumeric + @._-
   createdAt    DateTime      @default(now())
   quizAttempts QuizAttempt[]
 

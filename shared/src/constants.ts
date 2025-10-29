@@ -66,6 +66,15 @@ export const STORAGE_KEYS = {
   THEME_PREFERENCE: 'ai_quiz_theme',
 } as const;
 
+// Username Validation
+export const USERNAME_VALIDATION = {
+  MIN_LENGTH: 4,
+  MAX_LENGTH: 40,
+  PATTERN: /^[a-zA-Z0-9@._-]+$/,
+  ALLOWED_SPECIAL_CHARS: '@._-',
+  PATTERN_DESCRIPTION: 'Username must contain only letters, numbers, and special characters (@, -, _, .)',
+} as const;
+
 // Error Messages
 export const ERROR_MESSAGES = {
   USER_NOT_FOUND: 'User not found',
@@ -77,4 +86,8 @@ export const ERROR_MESSAGES = {
   UNAUTHORIZED: 'Unauthorized access',
   SERVER_ERROR: 'Internal server error',
   VALIDATION_ERROR: 'Validation error',
+  USERNAME_TOO_SHORT: 'Username must be at least 4 characters long',
+  USERNAME_TOO_LONG: 'Username cannot exceed 40 characters',
+  USERNAME_INVALID_FORMAT: 'Username must contain only letters, numbers, and special characters (@, -, _, .)',
+  USERNAME_ALREADY_EXISTS: 'Username already exists',
 } as const;
