@@ -6,12 +6,35 @@ import cookieParser from 'cookie-parser';
 import { env, isDevelopment } from './config/env';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { enforceHTTPS, validateSecurityConfig } from './middleware/httpsEnforcement';
 import prisma from './config/database';
 
 const app = express();
 
-// Middleware
-app.use(helmet());
+// Security Middleware
+// Enforce HTTPS in production (must be before other middleware)
+app.use(enforceHTTPS);
+
+// Enhanced Helmet configuration with HSTS
+app.use(
+  helmet({
+    // HTTP Strict Transport Security - forces HTTPS for 1 year
+    hsts: {
+      maxAge: 31536000, // 1 year in seconds
+      includeSubDomains: true,
+      preload: true,
+    },
+    // Content Security Policy
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles for development
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
+    },
+  })
+);
 app.use(
   cors({
     origin: env.clientUrl,
@@ -46,6 +69,9 @@ const startServer = async () => {
       console.error('   Please set JWT_SECRET in your .env file');
       process.exit(1);
     }
+
+    // Validate security configuration
+    validateSecurityConfig();
 
     // Test database connection
     await prisma.$connect();

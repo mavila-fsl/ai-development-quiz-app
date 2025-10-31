@@ -69,7 +69,7 @@ Three npm workspaces managed from root:
 Located in `server/prisma/schema.prisma`:
 
 **Core Models:**
-- `User` - Username-based accounts (no passwords)
+- `User` - User accounts with bcrypt-hashed passwords and JWT authentication
 - `QuizCategory` - High-level categories (Agent Fundamentals, Prompt Engineering, etc.)
 - `Quiz` - Individual quizzes with difficulty levels
 - `Question` - Multiple choice questions with JSON-stored options
@@ -236,13 +236,45 @@ npm run db:seed
 4. Update types in `shared/src/types.ts` to match
 5. Update seed file if needed
 
+## Security
+
+**IMPORTANT**: See [SECURITY.md](./SECURITY.md) for comprehensive security documentation.
+
+### Key Security Features
+
+- **Password Security**: bcrypt hashing with 12 salt rounds
+- **Transport Security**: HTTPS enforcement in production with HSTS headers
+- **Authentication**: JWT tokens in HTTP-only secure cookies
+- **Attack Prevention**: Timing-safe comparisons, SQL injection protection, XSS/CSRF protection
+- **Security Headers**: Helmet middleware with enhanced CSP and HSTS configuration
+
+### Password Transmission
+
+Passwords are securely transmitted using industry-standard practices:
+
+- **Development (HTTP)**: Passwords visible in network tools - expected behavior for local dev
+- **Production (HTTPS)**: All traffic encrypted via TLS/SSL - passwords not visible
+- **Server-side**: Passwords immediately hashed with bcrypt before storage
+- **Never stored in plain text**: Only bcrypt hashes stored in database
+
+### Production Security Requirements
+
+1. **HTTPS is mandatory** - Application automatically redirects HTTP to HTTPS
+2. **Environment variables** - Set `NODE_ENV=production` to enable security features
+3. **Reverse proxy** - Configure nginx/Apache to terminate TLS and set `X-Forwarded-Proto` header
+4. **Strong JWT secret** - Minimum 32 characters, randomly generated
+5. **Security headers** - HSTS, CSP, and other headers automatically configured via Helmet
+
 ## Production Considerations
 
 - Switch DATABASE_URL to PostgreSQL for production deployment
-- Set NODE_ENV=production
+- **Set NODE_ENV=production** (enables HTTPS enforcement, secure cookies, HSTS)
+- **Use HTTPS with valid TLS/SSL certificate** (required for security)
+- Generate strong JWT_SECRET (minimum 32 characters)
 - Build both workspaces: `npm run build`
 - Frontend build output: `client/dist/`
 - Backend compiled output: `server/dist/`
 - Consider using a process manager (PM2) for the Node server
 - Deploy frontend static files to CDN/static host (Vercel, Netlify)
 - Deploy backend to Node hosting (Heroku, Railway, Render)
+- Configure reverse proxy (nginx) for TLS termination
