@@ -51,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <footer className="mt-auto border-t border-gray-200 bg-white py-6">
         <div className="mx-auto max-w-7xl px-4 text-center text-sm text-gray-500 sm:px-6 lg:px-8">
-          <p>© 2024 AI Development Quiz App. Test and improve your AI development knowledge.</p>
+          <p>© 2025 AI Development Quiz App. Test and improve your AI development knowledge.</p>
         </div>
       </footer>
     </div>

@@ -2,6 +2,31 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important Guidelines
+
+**DO NOT start or restart the application by yourself unless explicitly requested.** You are not required to check whether the front-end and back-end are currently running. **DO NOT terminate or kill any process unless absolutely necessary.** If such a situation arises, ask for approval first before proceeding.
+
+### Multi-Agent System
+All project work is managed by subagents defined in `agents.prompt`.
+
+Whenever a task is requested:
+1. Claude Code decides which subagent to delegate to.
+2. That subagent operates only in its own scope.
+3. No task is executed directly by the orchestrator.
+
+Refer to `agents.prompt` for delegation logic.
+
+### /prompts/ Folder Policy
+
+All new implementation or bug-fix tasks must be defined as `.prompt.md` files inside `/prompts/`.
+
+Claude Code reads these feature prompts as executable blueprints.
+
+Each feature prompt:
+- Declares its goal, affected domains, and involved agents
+- Must follow delegation rules from `agents.prompt`
+- After successful completion, structure the outputs in the `/features/` directory as `.md` files.
+
 ## Project Overview
 
 AI Development Quiz App - A full-stack TypeScript educational platform for testing knowledge of AI software development concepts (agent design, prompt engineering, model selection). Built as a monorepo with React frontend, Express backend, and Prisma ORM.
