@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { env, isDevelopment } from './config/env';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
@@ -19,6 +20,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 if (isDevelopment) {
   app.use(morgan('dev'));
@@ -38,6 +40,13 @@ app.use(errorHandler);
 // Start server
 const startServer = async () => {
   try {
+    // Check for required environment variables
+    if (!env.jwtSecret) {
+      console.error('❌ JWT_SECRET is not configured in environment variables');
+      console.error('   Please set JWT_SECRET in your .env file');
+      process.exit(1);
+    }
+
     // Test database connection
     await prisma.$connect();
     console.log('✅ Database connected');

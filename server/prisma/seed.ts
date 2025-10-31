@@ -1,9 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import { hashPassword } from '../src/services/passwordService';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seed...');
+
+  // Hash password for test users
+  const testPassword = 'TestPass123!';
+  const hashedPassword = await hashPassword(testPassword);
+  console.log('✅ Generated password hash for test users');
 
   // Create Quiz Categories
   const agentCategory = await prisma.quizCategory.create({
@@ -275,14 +281,17 @@ async function main() {
 
   console.log('✅ Created Model Selection quiz');
 
-  // Create a demo user
+  // Create a demo user with hashed password
   const demoUser = await prisma.user.create({
     data: {
       username: 'demo_user',
+      passwordHash: hashedPassword,
     },
   });
 
   console.log('✅ Created demo user');
+  console.log(`   Username: demo_user`);
+  console.log(`   Password: ${testPassword}`);
 
   console.log('🎉 Database seeding completed successfully!');
   console.log(`\nCreated:`);

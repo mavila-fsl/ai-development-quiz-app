@@ -75,6 +75,14 @@ export const USERNAME_VALIDATION = {
   PATTERN_DESCRIPTION: 'Username must contain only letters, numbers, and special characters (@, -, _, .)',
 } as const;
 
+// Password Validation
+export const PASSWORD_VALIDATION = {
+  MIN_LENGTH: 8,
+  MAX_LENGTH: 128,
+  PATTERN: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=\-{}\[\]:;"'<>,.\/\\|`~])[A-Za-z\d@$!%*?&#^()_+=\-{}\[\]:;"'<>,.\/\\|`~]{8,}$/,
+  PATTERN_DESCRIPTION: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+} as const;
+
 // Error Messages
 export const ERROR_MESSAGES = {
   USER_NOT_FOUND: 'User not found',
@@ -90,4 +98,11 @@ export const ERROR_MESSAGES = {
   USERNAME_TOO_LONG: 'Username cannot exceed 40 characters',
   USERNAME_INVALID_FORMAT: 'Username must contain only letters, numbers, and special characters (@, -, _, .)',
   USERNAME_ALREADY_EXISTS: 'Username already exists',
+  PASSWORD_TOO_SHORT: 'Password must be at least 8 characters long',
+  PASSWORD_TOO_LONG: 'Password cannot exceed 128 characters',
+  PASSWORD_INVALID_FORMAT: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+  INVALID_CREDENTIALS: 'Invalid username or password',
+  RATE_LIMIT_EXCEEDED: 'Too many login attempts. Please try again later',
+  MISSING_AUTH_TOKEN: 'Authentication token is missing',
+  INVALID_AUTH_TOKEN: 'Authentication token is invalid or expired',
 } as const;

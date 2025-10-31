@@ -6,6 +6,12 @@ import { QuizCategory, USERNAME_VALIDATION, ERROR_MESSAGES } from '@ai-quiz-app/
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
+import PasswordInput from '../components/PasswordInput';
+import {
+  calculatePasswordStrength,
+  validatePassword,
+  validatePasswordMatch,
+} from '../utils/passwordValidation';
 
 /**
  * Validates a username according to the application's requirements.
@@ -43,9 +49,12 @@ const HomePage: React.FC = () => {
   const [categories, setCategories] = useState<QuizCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [creating, setCreating] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,31 +72,74 @@ const HomePage: React.FC = () => {
     }
   };
 
+  // Calculate password strength in real-time for sign-up
+  const passwordStrength = !isLogin && password ? calculatePasswordStrength(password) : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Client-side validation
-    const validationError = validateUsername(username);
-    if (validationError) {
-      setError(validationError);
+    const usernameValidationError = validateUsername(username);
+    if (usernameValidationError) {
+      setError(usernameValidationError);
       return;
+    }
+
+    // Password validation
+    const passwordValidationError = validatePassword(password);
+    if (passwordValidationError) {
+      setPasswordError(passwordValidationError);
+      return;
+    }
+
+    // For sign-up, check password match and strength
+    if (!isLogin) {
+      const matchError = validatePasswordMatch(password, confirmPassword);
+      if (matchError) {
+        setPasswordError(matchError);
+        return;
+      }
+
+      const strength = calculatePasswordStrength(password);
+      if (strength.score < 2) {
+        setPasswordError('Password is too weak. Please choose a stronger password.');
+        return;
+      }
     }
 
     setCreating(true);
     setError('');
+    setPasswordError('');
     try {
       if (isLogin) {
-        await loginUser(username.trim());
+        await loginUser(username.trim(), password);
       } else {
-        await createUser(username.trim());
+        await createUser(username.trim(), password);
       }
     } catch (error: any) {
       console.error(`Failed to ${isLogin ? 'login' : 'create user'}:`, error);
-      const errorMessage = error.response?.data?.error ||
-        (isLogin
-          ? 'User not found. Please check your username or create a new account.'
-          : 'Failed to create user. Username may already exist.');
-      setError(errorMessage);
+
+      // Clear password on error for security
+      setPassword('');
+      setConfirmPassword('');
+
+      // Handle specific error cases
+      const status = error.response?.status;
+      const errorMessage = error.response?.data?.error;
+
+      if (status === 401) {
+        setError(ERROR_MESSAGES.INVALID_CREDENTIALS);
+      } else if (status === 429) {
+        setError(ERROR_MESSAGES.RATE_LIMIT_EXCEEDED);
+      } else if (errorMessage) {
+        setError(errorMessage);
+      } else {
+        setError(
+          isLogin
+            ? 'Login failed. Please check your credentials and try again.'
+            : 'Failed to create account. Please try again.'
+        );
+      }
     } finally {
       setCreating(false);
     }
@@ -113,6 +165,9 @@ const HomePage: React.FC = () => {
                 onClick={() => {
                   setIsLogin(true);
                   setError('');
+                  setPasswordError('');
+                  setPassword('');
+                  setConfirmPassword('');
                 }}
                 className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                   isLogin
@@ -127,6 +182,9 @@ const HomePage: React.FC = () => {
                 onClick={() => {
                   setIsLogin(false);
                   setError('');
+                  setPasswordError('');
+                  setPassword('');
+                  setConfirmPassword('');
                 }}
                 className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                   !isLogin
@@ -159,6 +217,7 @@ const HomePage: React.FC = () => {
                   maxLength={USERNAME_VALIDATION.MAX_LENGTH}
                   pattern={USERNAME_VALIDATION.PATTERN.source}
                   title={USERNAME_VALIDATION.PATTERN_DESCRIPTION}
+                  autoComplete="username"
                 />
                 {!isLogin && (
                   <p className="mt-2 text-left text-xs text-gray-500">
@@ -166,12 +225,116 @@ const HomePage: React.FC = () => {
                   </p>
                 )}
               </div>
-              {error && (
-                <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
-                  {error}
+
+              <div>
+                <label htmlFor="password" className="mb-2 block text-left text-sm font-medium text-gray-700">
+                  {isLogin ? 'Enter your password' : 'Create a password'}
+                </label>
+                <PasswordInput
+                  id="password"
+                  name="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError('');
+                  }}
+                  placeholder="Enter your password"
+                  error={!!passwordError}
+                  required
+                  disabled={creating}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                />
+                {!isLogin && passwordStrength && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-gray-700">Password strength:</span>
+                      <span
+                        className={`text-xs font-semibold ${
+                          passwordStrength.color === 'red'
+                            ? 'text-red-600'
+                            : passwordStrength.color === 'orange'
+                            ? 'text-orange-600'
+                            : passwordStrength.color === 'yellow'
+                            ? 'text-yellow-600'
+                            : passwordStrength.color === 'green'
+                            ? 'text-green-600'
+                            : 'text-emerald-600'
+                        }`}
+                      >
+                        {passwordStrength.label}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          passwordStrength.color === 'red'
+                            ? 'bg-red-500'
+                            : passwordStrength.color === 'orange'
+                            ? 'bg-orange-500'
+                            : passwordStrength.color === 'yellow'
+                            ? 'bg-yellow-500'
+                            : passwordStrength.color === 'green'
+                            ? 'bg-green-500'
+                            : 'bg-emerald-500'
+                        }`}
+                        style={{ width: `${passwordStrength.percentage}%` }}
+                        role="progressbar"
+                        aria-valuenow={passwordStrength.percentage}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Password strength: ${passwordStrength.label}`}
+                      />
+                    </div>
+                    <p className="mt-2 text-left text-xs text-gray-500">
+                      Must contain uppercase, lowercase, number, and special character
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {!isLogin && (
+                <div>
+                  <label htmlFor="confirmPassword" className="mb-2 block text-left text-sm font-medium text-gray-700">
+                    Confirm your password
+                  </label>
+                  <PasswordInput
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setPasswordError('');
+                    }}
+                    placeholder="Confirm your password"
+                    error={!!passwordError}
+                    required
+                    disabled={creating}
+                    autoComplete="new-password"
+                  />
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="mt-2 text-left text-xs text-red-600">
+                      Passwords do not match
+                    </p>
+                  )}
                 </div>
               )}
-              <Button type="submit" className="w-full" disabled={creating}>
+
+              {(error || passwordError) && (
+                <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">
+                  {error || passwordError}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={
+                  creating ||
+                  (!isLogin &&
+                    (password !== confirmPassword ||
+                      (passwordStrength ? passwordStrength.score < 2 : true)))
+                }
+              >
                 {creating ? (isLogin ? 'Logging in...' : 'Creating account...') : (isLogin ? 'Login' : 'Create Account')}
               </Button>
             </form>
@@ -183,6 +346,9 @@ const HomePage: React.FC = () => {
                   onClick={() => {
                     setIsLogin(false);
                     setError('');
+                    setPasswordError('');
+                    setPassword('');
+                    setConfirmPassword('');
                   }}
                   className="font-medium text-primary-600 hover:text-primary-700"
                 >
@@ -198,6 +364,9 @@ const HomePage: React.FC = () => {
                   onClick={() => {
                     setIsLogin(true);
                     setError('');
+                    setPasswordError('');
+                    setPassword('');
+                    setConfirmPassword('');
                   }}
                   className="font-medium text-primary-600 hover:text-primary-700"
                 >

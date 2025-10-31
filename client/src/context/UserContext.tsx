@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@ai-quiz-app/shared';
-import { createUser as createUserApi, loginUser as loginUserApi, getUser } from '../services/api';
+import { createUser as createUserApi, loginUser as loginUserApi, logoutUser as logoutUserApi, getUser } from '../services/api';
 
 interface UserContextType {
   user: User | null;
   loading: boolean;
   setUser: (user: User | null) => void;
-  createUser: (username: string) => Promise<User>;
-  loginUser: (username: string) => Promise<User>;
+  createUser: (username: string, password: string) => Promise<User>;
+  loginUser: (username: string, password: string) => Promise<User>;
   logout: () => void;
 }
 
@@ -48,20 +48,28 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const createUser = async (username: string): Promise<User> => {
-    const newUser = await createUserApi({ username });
+  const createUser = async (username: string, password: string): Promise<User> => {
+    const newUser = await createUserApi({ username, password });
     setUser(newUser);
     return newUser;
   };
 
-  const loginUser = async (username: string): Promise<User> => {
-    const existingUser = await loginUserApi({ username });
+  const loginUser = async (username: string, password: string): Promise<User> => {
+    const existingUser = await loginUserApi({ username, password });
     setUser(existingUser);
     return existingUser;
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    try {
+      // Call backend to clear authentication cookie
+      await logoutUserApi();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear local user state regardless of API call success
+      setUser(null);
+    }
   };
 
   return (

@@ -22,6 +22,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable sending cookies for JWT authentication
 });
 
 // Users
@@ -33,6 +34,10 @@ export const createUser = async (data: CreateUserDto): Promise<User> => {
 export const loginUser = async (data: CreateUserDto): Promise<User> => {
   const response = await api.post<ApiResponse<User>>('/users/login', data);
   return response.data.data!;
+};
+
+export const logoutUser = async (): Promise<void> => {
+  await api.post<ApiResponse<null>>('/users/logout');
 };
 
 export const getUser = async (id: string): Promise<User> => {

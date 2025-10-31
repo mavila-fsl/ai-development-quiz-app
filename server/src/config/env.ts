@@ -8,6 +8,7 @@ export const env = {
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
   databaseUrl: process.env.DATABASE_URL || 'file:./dev.db',
+  jwtSecret: process.env.JWT_SECRET || '',
 };
 
 export const isDevelopment = env.nodeEnv === 'development';

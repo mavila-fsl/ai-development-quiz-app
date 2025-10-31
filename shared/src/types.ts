@@ -7,6 +7,12 @@ export interface User {
 
 export interface CreateUserDto {
   username: string;
+  password: string;
+}
+
+export interface LoginDto {
+  username: string;
+  password: string;
 }
 
 // Quiz Category Types
