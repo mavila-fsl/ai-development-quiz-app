@@ -6,6 +6,7 @@
   "workspaces": [
     "client",
     "server",
+    "database",
     "shared"
   ],
   "scripts": {
@@ -13,9 +14,10 @@
     "dev:server": "npm run dev --workspace=server",
     "dev:client": "npm run dev --workspace=client",
     "build": "npm run build --workspace=client && npm run build --workspace=server",
-    "db:migrate": "npm run db:migrate --workspace=server",
-    "db:seed": "npm run db:seed --workspace=server",
-    "db:studio": "npm run db:studio --workspace=server",
+    "db:migrate": "npm run db:migrate --workspace=database",
+    "db:seed": "npm run db:seed --workspace=database",
+    "db:studio": "npm run db:studio --workspace=database",
+    "db:generate": "npm run db:generate --workspace=database",
     "setup": "npm install && npm run db:migrate && npm run db:seed"
   },
   "keywords": [

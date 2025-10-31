@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { AppError } from './errorHandler';
 import { ERROR_MESSAGES } from '@ai-quiz-app/shared';
-import prisma from '../config/database';
+import { prisma } from '@ai-quiz-app/database';
 
 const JWT_SECRET = env.jwtSecret || '';
 const JWT_EXPIRATION = '7d'; // 7 days

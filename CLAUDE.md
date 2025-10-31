@@ -52,21 +52,35 @@ npm run build             # Build both client and server for production
 
 ### Working with Individual Workspaces
 ```bash
-cd client && npm run dev       # Frontend only
-cd server && npm run dev       # Backend only with tsx watch
-cd server && npx prisma generate  # Regenerate Prisma client after schema changes
+cd client && npm run dev              # Frontend only
+cd server && npm run dev              # Backend only with tsx watch
+```
+
+### Database Operations (from root)
+```bash
+npm run db:migrate                    # Run Prisma migrations
+npm run db:seed                       # Seed database with quiz content
+npm run db:generate                   # Regenerate Prisma client after schema changes
+npm run db:studio                     # Open Prisma Studio for database management
 ```
 
 ## Architecture
 
 ### Monorepo Structure
-Three npm workspaces managed from root:
-- **shared/** - Shared TypeScript types and constants used by both client and server
+Four npm workspaces managed from root:
+- **shared/** - Shared TypeScript types and constants used by all workspaces
 - **client/** - React frontend (Vite + TailwindCSS + React Router)
-- **server/** - Express backend (TypeScript + Prisma + SQLite)
+- **database/** - Database layer with Prisma ORM and SQLite (separate from server)
+- **server/** - Express backend (TypeScript, imports database from @ai-quiz-app/database)
+
+**Database Workspace:** The database layer is now a separate workspace to provide clear separation of concerns between database engineering and backend engineering. This allows:
+- Database migrations and schema changes to be managed independently
+- Prisma types to be centrally generated and shared
+- Server to depend on `@ai-quiz-app/database` package for all data access
+- Scripts like `npm run db:migrate`, `npm run db:seed`, and `npm run db:studio` to be executed from root
 
 ### Database Architecture (Prisma)
-Located in `server/prisma/schema.prisma`:
+Located in `database/prisma/schema.prisma`:
 
 **Core Models:**
 - `User` - User accounts with bcrypt-hashed passwords and JWT authentication
@@ -104,10 +118,12 @@ Located in `server/prisma/schema.prisma`:
 - `/api/attempts` - Quiz attempt lifecycle (start, complete, retrieve)
 - `/api/ai` - AI-enhanced features (recommendations, explanations)
 
-**Controllers:** Handle request/response logic, call Prisma directly (no separate repository layer)
+**Controllers:** Handle request/response logic, import Prisma from @ai-quiz-app/database
+- Located in `server/src/controllers/`
 - Validation using express-validator middleware
 - Return ApiResponse<T> format from shared types
 - Questions parsed from JSON storage format before sending to client
+- Database access via: `import { prisma } from '@ai-quiz-app/database'`
 
 **AI Service:** `server/src/services/aiService.ts`
 - Optional integration with Anthropic Claude API
@@ -199,19 +215,19 @@ Parse/stringify happens in controllers when moving between DB and API.
 ### Adding New Quiz Content
 
 **Option 1: Seed file (recommended for bulk)**
-Edit `server/prisma/seed.ts` and run `npm run db:seed`
+Edit `database/prisma/seed.ts` and run `npm run db:seed`
 
 **Option 2: Prisma Studio GUI**
 Run `npm run db:studio` and add via browser interface at localhost:5555
 
 **Option 3: Database migrations**
-Update `server/prisma/schema.prisma` then run `npm run db:migrate`
+Update `database/prisma/schema.prisma` then run `npm run db:migrate`
 
 ## Common Tasks
 
 ### Reset Database
 ```bash
-rm server/prisma/dev.db
+rm database/prisma/dev.db
 npm run db:migrate
 npm run db:seed
 ```
@@ -230,9 +246,9 @@ npm run db:seed
 3. Link from existing pages with React Router Link
 
 ### Update Prisma Schema
-1. Edit `server/prisma/schema.prisma`
+1. Edit `database/prisma/schema.prisma`
 2. Run `npm run db:migrate` (creates migration)
-3. Run `cd server && npx prisma generate` (updates client)
+3. Run `npm run db:generate` (updates Prisma client)
 4. Update types in `shared/src/types.ts` to match
 5. Update seed file if needed
 
@@ -271,9 +287,11 @@ Passwords are securely transmitted using industry-standard practices:
 - **Set NODE_ENV=production** (enables HTTPS enforcement, secure cookies, HSTS)
 - **Use HTTPS with valid TLS/SSL certificate** (required for security)
 - Generate strong JWT_SECRET (minimum 32 characters)
-- Build both workspaces: `npm run build`
+- Build all workspaces: `npm run build`
+- Database migrations should be run before server deployment: `npm run db:migrate`
 - Frontend build output: `client/dist/`
 - Backend compiled output: `server/dist/`
+- Database build output: `database/dist/`
 - Consider using a process manager (PM2) for the Node server
 - Deploy frontend static files to CDN/static host (Vercel, Netlify)
 - Deploy backend to Node hosting (Heroku, Railway, Render)

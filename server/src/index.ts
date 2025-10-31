@@ -7,7 +7,7 @@ import { env, isDevelopment } from './config/env';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
 import { enforceHTTPS, validateSecurityConfig } from './middleware/httpsEnforcement';
-import prisma from './config/database';
+import { prisma } from '@ai-quiz-app/database';
 
 const app = express();
 

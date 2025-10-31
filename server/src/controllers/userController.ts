@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import prisma from '../config/database';
+import { prisma } from '@ai-quiz-app/database';
 import { ApiResponse, User, UserStats } from '@ai-quiz-app/shared';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { ERROR_MESSAGES } from '@ai-quiz-app/shared';

@@ -47,7 +47,7 @@ Claude Code must always use these paths when delegating.
 - Any backend (server/database) task → use **Backend Engineer Agent**
 - Any testing or security task → use **QA & Security Agent**
 - Any documentation task → use **Documentation Agent**
-- Any monorepo or config management → use **System Architect Agent**
+- Any monorepo or config management, or any planning proccess related with the project architecture → use **System Architect Agent**
 
 DO NOT execute or run the application directly.
 Instead, describe what should be done and which agent will perform it.
