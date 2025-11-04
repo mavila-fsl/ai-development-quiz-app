@@ -96,3 +96,115 @@ export const getQuizQuestions = asyncHandler(async (req: Request, res: Response)
 
   res.json(response);
 });
+
+export const createQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const { categoryId, title, description, difficulty } = req.body;
+
+  // Verify category exists
+  const category = await prisma.quizCategory.findUnique({
+    where: { id: categoryId },
+  });
+
+  if (!category) {
+    throw new AppError(404, ERROR_MESSAGES.CATEGORY_NOT_FOUND);
+  }
+
+  const quiz = await prisma.quiz.create({
+    data: {
+      categoryId,
+      title,
+      description,
+      difficulty,
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  const typedQuiz: Quiz = {
+    ...quiz,
+    difficulty: quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+  };
+
+  const response: ApiResponse<Quiz> = {
+    success: true,
+    data: typedQuiz,
+  };
+
+  res.status(201).json(response);
+});
+
+export const updateQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { categoryId, title, description, difficulty } = req.body;
+
+  // Verify quiz exists
+  const existingQuiz = await prisma.quiz.findUnique({
+    where: { id },
+  });
+
+  if (!existingQuiz) {
+    throw new AppError(404, ERROR_MESSAGES.QUIZ_NOT_FOUND);
+  }
+
+  // If categoryId is being updated, verify it exists
+  if (categoryId) {
+    const category = await prisma.quizCategory.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new AppError(404, ERROR_MESSAGES.CATEGORY_NOT_FOUND);
+    }
+  }
+
+  const quiz = await prisma.quiz.update({
+    where: { id },
+    data: {
+      ...(categoryId && { categoryId }),
+      ...(title && { title }),
+      ...(description && { description }),
+      ...(difficulty && { difficulty }),
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  const typedQuiz: Quiz = {
+    ...quiz,
+    difficulty: quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
+  };
+
+  const response: ApiResponse<Quiz> = {
+    success: true,
+    data: typedQuiz,
+  };
+
+  res.json(response);
+});
+
+export const deleteQuiz = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  // Verify quiz exists
+  const quiz = await prisma.quiz.findUnique({
+    where: { id },
+  });
+
+  if (!quiz) {
+    throw new AppError(404, ERROR_MESSAGES.QUIZ_NOT_FOUND);
+  }
+
+  // Delete quiz (cascade will handle questions, attempts, answers)
+  await prisma.quiz.delete({
+    where: { id },
+  });
+
+  const response: ApiResponse<{ message: string }> = {
+    success: true,
+    data: { message: 'Quiz deleted successfully' },
+  };
+
+  res.json(response);
+});

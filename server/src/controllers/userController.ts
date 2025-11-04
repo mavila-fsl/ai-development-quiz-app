@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@ai-quiz-app/database';
-import { ApiResponse, User, UserStats } from '@ai-quiz-app/shared';
+import { ApiResponse, User, UserRole, UserStats } from '@ai-quiz-app/shared';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { ERROR_MESSAGES } from '@ai-quiz-app/shared';
 import { hashPassword, verifyPassword } from '../services/passwordService';
@@ -28,13 +28,14 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
     select: {
       id: true,
       username: true,
+      role: true,
       tokenVersion: true,
       createdAt: true,
     },
   });
 
-  // Generate JWT token with tokenVersion
-  const token = generateToken(user.id, user.tokenVersion);
+  // Generate JWT token with role and tokenVersion
+  const token = generateToken(user.id, user.role as UserRole, user.tokenVersion);
 
   // Set authentication cookie
   setAuthCookie(res, token);
@@ -43,6 +44,7 @@ export const createUser = asyncHandler(async (req: Request, res: Response) => {
   const safeUser: User = {
     id: user.id,
     username: user.username,
+    role: user.role as UserRole,
     createdAt: user.createdAt,
   };
 
@@ -60,15 +62,29 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 
   const user = await prisma.user.findUnique({
     where: { id },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      createdAt: true,
+    },
   });
 
   if (!user) {
     throw new AppError(404, ERROR_MESSAGES.USER_NOT_FOUND);
   }
 
+  // Cast role from Prisma string to UserRole enum
+  const safeUser: User = {
+    id: user.id,
+    username: user.username,
+    role: user.role as UserRole,
+    createdAt: user.createdAt,
+  };
+
   const response: ApiResponse<User> = {
     success: true,
-    data: user,
+    data: safeUser,
   };
 
   res.json(response);
@@ -77,12 +93,13 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
-  // Fetch user with password hash and tokenVersion
+  // Fetch user with password hash, role, and tokenVersion
   const user = await prisma.user.findUnique({
     where: { username },
     select: {
       id: true,
       username: true,
+      role: true,
       passwordHash: true,
       tokenVersion: true,
       createdAt: true,
@@ -106,8 +123,8 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError(401, ERROR_MESSAGES.INVALID_CREDENTIALS);
   }
 
-  // Generate JWT token with tokenVersion
-  const token = generateToken(user.id, user.tokenVersion);
+  // Generate JWT token with role and tokenVersion
+  const token = generateToken(user.id, user.role as UserRole, user.tokenVersion);
 
   // Set authentication cookie
   setAuthCookie(res, token);
@@ -116,6 +133,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const safeUser: User = {
     id: user.id,
     username: user.username,
+    role: user.role as UserRole,
     createdAt: user.createdAt,
   };
 
@@ -130,9 +148,21 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
 
 export const getUserStats = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const authenticatedUserId = req.userId;
+
+  // SECURITY: Verify the authenticated user is requesting their own stats (or is a Quiz Manager)
+  if (id !== authenticatedUserId && req.userRole !== 'QUIZ_MANAGER') {
+    throw new AppError(403, ERROR_MESSAGES.INSUFFICIENT_PERMISSIONS);
+  }
 
   const user = await prisma.user.findUnique({
     where: { id },
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      createdAt: true,
+    },
   });
 
   if (!user) {
@@ -253,13 +283,14 @@ export const invalidateAllSessions = asyncHandler(async (req: Request, res: Resp
     select: {
       id: true,
       username: true,
+      role: true,
       tokenVersion: true,
       createdAt: true,
     },
   });
 
-  // Generate new token with updated version
-  const token = generateToken(user.id, user.tokenVersion);
+  // Generate new token with role and updated version
+  const token = generateToken(user.id, user.role as UserRole, user.tokenVersion);
 
   // Set new authentication cookie
   setAuthCookie(res, token);

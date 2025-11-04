@@ -13,6 +13,12 @@ import type {
   CreateUserDto,
   CreateQuizAttemptDto,
   CompleteQuizAttemptDto,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  CreateQuizDto,
+  UpdateQuizDto,
+  CreateQuestionDto,
+  UpdateQuestionDto,
 } from '@ai-quiz-app/shared';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -24,6 +30,22 @@ const api = axios.create({
   },
   withCredentials: true, // Enable sending cookies for JWT authentication
 });
+
+// Add response interceptor to handle 403 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 403) {
+      // 403 Forbidden - user doesn't have permission
+      console.error('Access denied:', error.response.data?.error || 'Insufficient permissions');
+
+      // Let the error propagate so components can handle it
+      // The RoleProtectedRoute component will redirect to /unauthorized
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 // Users
 export const createUser = async (data: CreateUserDto): Promise<User> => {
@@ -61,6 +83,20 @@ export const getCategory = async (id: string): Promise<QuizCategory> => {
   return response.data.data!;
 };
 
+export const createCategory = async (data: CreateCategoryDto): Promise<QuizCategory> => {
+  const response = await api.post<ApiResponse<QuizCategory>>('/categories', data);
+  return response.data.data!;
+};
+
+export const updateCategory = async (id: string, data: UpdateCategoryDto): Promise<QuizCategory> => {
+  const response = await api.put<ApiResponse<QuizCategory>>(`/categories/${id}`, data);
+  return response.data.data!;
+};
+
+export const deleteCategory = async (id: string): Promise<void> => {
+  await api.delete(`/categories/${id}`);
+};
+
 // Quizzes
 export const getQuizzes = async (categoryId?: string): Promise<Quiz[]> => {
   const response = await api.get<ApiResponse<Quiz[]>>('/quizzes', {
@@ -77,6 +113,35 @@ export const getQuiz = async (id: string): Promise<Quiz> => {
 export const getQuizQuestions = async (quizId: string): Promise<Question[]> => {
   const response = await api.get<ApiResponse<Question[]>>(`/quizzes/${quizId}/questions`);
   return response.data.data!;
+};
+
+export const createQuiz = async (data: CreateQuizDto): Promise<Quiz> => {
+  const response = await api.post<ApiResponse<Quiz>>('/quizzes', data);
+  return response.data.data!;
+};
+
+export const updateQuiz = async (id: string, data: UpdateQuizDto): Promise<Quiz> => {
+  const response = await api.put<ApiResponse<Quiz>>(`/quizzes/${id}`, data);
+  return response.data.data!;
+};
+
+export const deleteQuiz = async (id: string): Promise<void> => {
+  await api.delete(`/quizzes/${id}`);
+};
+
+// Questions
+export const createQuestion = async (data: CreateQuestionDto): Promise<Question> => {
+  const response = await api.post<ApiResponse<Question>>('/questions', data);
+  return response.data.data!;
+};
+
+export const updateQuestion = async (id: string, data: UpdateQuestionDto): Promise<Question> => {
+  const response = await api.put<ApiResponse<Question>>(`/questions/${id}`, data);
+  return response.data.data!;
+};
+
+export const deleteQuestion = async (id: string): Promise<void> => {
+  await api.delete(`/questions/${id}`);
 };
 
 // Quiz Attempts

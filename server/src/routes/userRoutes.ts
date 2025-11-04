@@ -65,12 +65,19 @@ router.post('/logout', logoutUser);
 // POST /api/users/invalidate-sessions - Invalidate all sessions (requires auth)
 router.post('/invalidate-sessions', authMiddleware, invalidateAllSessions);
 
-// GET /api/users/:id - Get user by ID
-router.get('/:id', [param('id').isUUID().withMessage('Invalid user ID')], validate, getUser);
+// GET /api/users/:id - Get user by ID (requires authentication)
+router.get(
+  '/:id',
+  authMiddleware,
+  [param('id').isUUID().withMessage('Invalid user ID')],
+  validate,
+  getUser
+);
 
-// GET /api/users/:id/stats - Get user statistics
+// GET /api/users/:id/stats - Get user statistics (requires authentication)
 router.get(
   '/:id/stats',
+  authMiddleware,
   [param('id').isUUID().withMessage('Invalid user ID')],
   validate,
   getUserStats

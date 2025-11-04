@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { AppError } from './errorHandler';
-import { ERROR_MESSAGES } from '@ai-quiz-app/shared';
+import { ERROR_MESSAGES, UserRole } from '@ai-quiz-app/shared';
 import { prisma } from '@ai-quiz-app/database';
 
 const JWT_SECRET = env.jwtSecret || '';
@@ -10,16 +10,18 @@ const JWT_EXPIRATION = '7d'; // 7 days
 
 interface JwtPayload {
   userId: string;
+  role: UserRole;
   tokenVersion: number;
   iat?: number;
   exp?: number;
 }
 
-// Extend Express Request to include userId
+// Extend Express Request to include userId and userRole
 declare global {
   namespace Express {
     interface Request {
       userId?: string;
+      userRole?: UserRole;
     }
   }
 }
@@ -27,15 +29,16 @@ declare global {
 /**
  * Generates a JWT token for a user
  * @param userId - The user's unique identifier
+ * @param role - The user's role for authorization
  * @param tokenVersion - The user's current token version for session invalidation
  * @returns A signed JWT token valid for 7 days
  */
-export const generateToken = (userId: string, tokenVersion: number): string => {
+export const generateToken = (userId: string, role: UserRole, tokenVersion: number): string => {
   if (!JWT_SECRET) {
     throw new Error('JWT_SECRET is not configured');
   }
 
-  return jwt.sign({ userId, tokenVersion }, JWT_SECRET, {
+  return jwt.sign({ userId, role, tokenVersion }, JWT_SECRET, {
     expiresIn: JWT_EXPIRATION,
   });
 };
@@ -43,9 +46,9 @@ export const generateToken = (userId: string, tokenVersion: number): string => {
 /**
  * Verifies and decodes a JWT token
  * @param token - The JWT token to verify
- * @returns The decoded payload with userId and tokenVersion, or null if invalid
+ * @returns The decoded payload with userId, role, and tokenVersion, or null if invalid
  */
-export const verifyToken = (token: string): { userId: string; tokenVersion: number } | null => {
+export const verifyToken = (token: string): { userId: string; role: UserRole; tokenVersion: number } | null => {
   try {
     if (!JWT_SECRET) {
       // Critical configuration error - log and throw
@@ -54,7 +57,7 @@ export const verifyToken = (token: string): { userId: string; tokenVersion: numb
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-    return { userId: decoded.userId, tokenVersion: decoded.tokenVersion };
+    return { userId: decoded.userId, role: decoded.role, tokenVersion: decoded.tokenVersion };
   } catch (error) {
     // Log the error for debugging (but don't expose to client)
     if (error instanceof Error && error.message === 'JWT_SECRET is not configured') {
@@ -68,8 +71,8 @@ export const verifyToken = (token: string): { userId: string; tokenVersion: numb
 
 /**
  * Express middleware that protects routes by verifying JWT tokens from cookies
- * Attaches userId to the request object if token is valid
- * Also validates tokenVersion to enable session invalidation
+ * Attaches userId and userRole to the request object if token is valid
+ * Also validates tokenVersion and role against database to enable session invalidation and security
  */
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -87,10 +90,11 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       throw new AppError(401, ERROR_MESSAGES.INVALID_AUTH_TOKEN);
     }
 
-    // Verify tokenVersion against database to check if session is still valid
+    // Verify tokenVersion and role against database to check if session is still valid
+    // This ensures the role in the JWT matches the current role in the database
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { tokenVersion: true },
+      select: { tokenVersion: true, role: true },
     });
 
     if (!user || user.tokenVersion !== decoded.tokenVersion) {
@@ -98,8 +102,15 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       throw new AppError(401, ERROR_MESSAGES.INVALID_AUTH_TOKEN);
     }
 
-    // Attach userId to request
+    // Security: Validate that the role in the JWT matches the database
+    // This prevents privilege escalation if a user's role was changed
+    if (user.role !== decoded.role) {
+      throw new AppError(401, ERROR_MESSAGES.INVALID_AUTH_TOKEN);
+    }
+
+    // Attach userId and userRole to request
     req.userId = decoded.userId;
+    req.userRole = decoded.role as UserRole;
 
     next();
   } catch (error) {

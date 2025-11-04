@@ -1,3 +1,21 @@
+// User Roles
+export const USER_ROLES = {
+  QUIZ_TAKER: 'QUIZ_TAKER',
+  QUIZ_MANAGER: 'QUIZ_MANAGER',
+} as const;
+
+// User Role Display Names
+export const ROLE_DISPLAY_NAMES = {
+  QUIZ_TAKER: 'Quiz Taker',
+  QUIZ_MANAGER: 'Quiz Manager',
+} as const;
+
+// User Role Descriptions
+export const ROLE_DESCRIPTIONS = {
+  QUIZ_TAKER: 'Can take quizzes and view their own results and statistics',
+  QUIZ_MANAGER: 'Can manage quiz content, categories, questions, and view all user statistics',
+} as const;
+
 // Quiz Difficulty Levels
 export const DIFFICULTY_LEVELS = {
   BEGINNER: 'beginner',
@@ -105,4 +123,8 @@ export const ERROR_MESSAGES = {
   RATE_LIMIT_EXCEEDED: 'Too many login attempts. Please try again later',
   MISSING_AUTH_TOKEN: 'Authentication token is missing',
   INVALID_AUTH_TOKEN: 'Authentication token is invalid or expired',
+  INSUFFICIENT_PERMISSIONS: 'You do not have permission to perform this action',
+  ROLE_REQUIRED_QUIZ_MANAGER: 'This action requires Quiz Manager role',
+  INVALID_ROLE: 'Invalid user role specified',
+  ROLE_CHANGE_UNAUTHORIZED: 'You are not authorized to change user roles',
 } as const;

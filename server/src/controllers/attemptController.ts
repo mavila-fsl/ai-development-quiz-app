@@ -5,6 +5,7 @@ import {
   QuizAttempt,
   QuizResult,
   AnswerResult,
+  UserRole,
   PERFORMANCE_THRESHOLDS,
   PERFORMANCE_MESSAGES,
 } from '@ai-quiz-app/shared';
@@ -12,7 +13,13 @@ import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { ERROR_MESSAGES } from '@ai-quiz-app/shared';
 
 export const startAttempt = asyncHandler(async (req: Request, res: Response) => {
-  const { userId, quizId } = req.body;
+  const { quizId } = req.body;
+  // SECURITY: Use authenticated user ID from JWT token, not from request body
+  const userId = req.userId;
+
+  if (!userId) {
+    throw new AppError(401, ERROR_MESSAGES.MISSING_AUTH_TOKEN);
+  }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
@@ -58,6 +65,7 @@ export const startAttempt = asyncHandler(async (req: Request, res: Response) => 
 
 export const completeAttempt = asyncHandler(async (req: Request, res: Response) => {
   const { attemptId, answers } = req.body;
+  const authenticatedUserId = req.userId;
 
   const attempt = await prisma.quizAttempt.findUnique({
     where: { id: attemptId },
@@ -68,6 +76,11 @@ export const completeAttempt = asyncHandler(async (req: Request, res: Response) 
 
   if (!attempt) {
     throw new AppError(404, ERROR_MESSAGES.ATTEMPT_NOT_FOUND);
+  }
+
+  // SECURITY: Verify the authenticated user owns this attempt
+  if (attempt.userId !== authenticatedUserId) {
+    throw new AppError(403, ERROR_MESSAGES.INSUFFICIENT_PERMISSIONS);
   }
 
   if (attempt.completedAt) {
@@ -147,9 +160,13 @@ export const completeAttempt = asyncHandler(async (req: Request, res: Response) 
     feedback = PERFORMANCE_MESSAGES.AVERAGE;
   }
 
-  // Map Prisma result to typed QuizAttempt with proper difficulty type
+  // Map Prisma result to typed QuizAttempt with proper difficulty and role types
   const typedUpdatedAttempt: QuizAttempt = {
     ...updatedAttempt,
+    user: updatedAttempt.user ? {
+      ...updatedAttempt.user,
+      role: updatedAttempt.user.role as UserRole,
+    } : undefined,
     quiz: {
       ...updatedAttempt.quiz,
       difficulty: updatedAttempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
@@ -178,6 +195,7 @@ export const completeAttempt = asyncHandler(async (req: Request, res: Response) 
 
 export const getAttempt = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
+  const authenticatedUserId = req.userId;
 
   const attempt = await prisma.quizAttempt.findUnique({
     where: { id },
@@ -200,9 +218,18 @@ export const getAttempt = asyncHandler(async (req: Request, res: Response) => {
     throw new AppError(404, ERROR_MESSAGES.ATTEMPT_NOT_FOUND);
   }
 
-  // Map Prisma result to typed QuizAttempt with proper difficulty type
+  // SECURITY: Verify the authenticated user owns this attempt (or is a Quiz Manager)
+  if (attempt.userId !== authenticatedUserId && req.userRole !== 'QUIZ_MANAGER') {
+    throw new AppError(403, ERROR_MESSAGES.INSUFFICIENT_PERMISSIONS);
+  }
+
+  // Map Prisma result to typed QuizAttempt with proper difficulty and role types
   const typedAttempt: QuizAttempt = {
     ...attempt,
+    user: attempt.user ? {
+      ...attempt.user,
+      role: attempt.user.role as UserRole,
+    } : undefined,
     quiz: {
       ...attempt.quiz,
       difficulty: attempt.quiz.difficulty as 'beginner' | 'intermediate' | 'advanced',
@@ -219,6 +246,12 @@ export const getAttempt = asyncHandler(async (req: Request, res: Response) => {
 
 export const getUserAttempts = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
+  const authenticatedUserId = req.userId;
+
+  // SECURITY: Verify the authenticated user is requesting their own attempts (or is a Quiz Manager)
+  if (userId !== authenticatedUserId && req.userRole !== 'QUIZ_MANAGER') {
+    throw new AppError(403, ERROR_MESSAGES.INSUFFICIENT_PERMISSIONS);
+  }
 
   const attempts = await prisma.quizAttempt.findMany({
     where: { userId },

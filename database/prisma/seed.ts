@@ -281,24 +281,33 @@ async function main() {
 
   console.log('✅ Created Model Selection quiz');
 
-  // Create a demo user with hashed password
-  const demoUser = await prisma.user.create({
+  // Create demo users with different roles
+  const quizTaker = await prisma.user.create({
     data: {
       username: 'demo_user',
       passwordHash: hashedPassword,
+      role: 'QUIZ_TAKER',
     },
   });
 
-  console.log('✅ Created demo user');
-  console.log(`   Username: demo_user`);
-  console.log(`   Password: ${testPassword}`);
+  const quizManager = await prisma.user.create({
+    data: {
+      username: 'quiz_manager',
+      passwordHash: hashedPassword,
+      role: 'QUIZ_MANAGER',
+    },
+  });
+
+  console.log('✅ Created demo users');
+  console.log(`   QUIZ_TAKER - Username: demo_user, Password: ${testPassword}`);
+  console.log(`   QUIZ_MANAGER - Username: quiz_manager, Password: ${testPassword}`);
 
   console.log('🎉 Database seeding completed successfully!');
   console.log(`\nCreated:`);
   console.log(`  - 3 quiz categories`);
   console.log(`  - 3 quizzes`);
   console.log(`  - 15 questions`);
-  console.log(`  - 1 demo user`);
+  console.log(`  - 2 demo users (1 QUIZ_TAKER, 1 QUIZ_MANAGER)`);
 }
 
 main()

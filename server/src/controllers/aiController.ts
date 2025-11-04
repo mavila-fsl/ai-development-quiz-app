@@ -2,10 +2,19 @@ import { Request, Response } from 'express';
 import { prisma } from '@ai-quiz-app/database';
 import aiService from '../services/aiService';
 import { ApiResponse, AIRecommendation, AIEnhancedExplanation } from '@ai-quiz-app/shared';
-import { asyncHandler } from '../middleware/errorHandler';
+import { asyncHandler, AppError } from '../middleware/errorHandler';
+import { ERROR_MESSAGES } from '@ai-quiz-app/shared';
 
 export const getRecommendation = asyncHandler(async (req: Request, res: Response) => {
-  const { userId } = req.body;
+  const authenticatedUserId = req.userId;
+
+  if (!authenticatedUserId) {
+    throw new AppError(401, ERROR_MESSAGES.MISSING_AUTH_TOKEN);
+  }
+
+  // SECURITY: Use authenticated user ID from JWT token, not from request body
+  // Quiz Managers could request recommendations for other users if needed by fetching their own attempts
+  const userId = authenticatedUserId;
 
   const attempts = await prisma.quizAttempt.findMany({
     where: {

@@ -30,8 +30,10 @@ const ResultsPage: React.FC = () => {
       const attempt = await getAttempt(id!);
       // Transform to result format if needed
       console.log('Attempt:', attempt);
+      // TODO: Transform attempt to QuizResult format and call setResult(transformedResult)
     } catch (error) {
       console.error('Failed to load result:', error);
+      setResult(null);
     } finally {
       setLoading(false);
     }

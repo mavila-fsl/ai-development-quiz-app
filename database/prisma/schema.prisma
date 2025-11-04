@@ -14,6 +14,7 @@ model User {
   id           String        @id @default(uuid())
   username     String        @unique // 4-40 chars, alphanumeric + @._-
   passwordHash String
+  role         String        @default("QUIZ_TAKER") // QUIZ_TAKER or QUIZ_MANAGER
   tokenVersion Int           @default(1) // Used for session invalidation
   createdAt    DateTime      @default(now())
   quizAttempts QuizAttempt[]

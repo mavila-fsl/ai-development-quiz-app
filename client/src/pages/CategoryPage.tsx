@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getCategory, getQuizzes } from '../services/api';
 import { QuizCategory, Quiz } from '@ai-quiz-app/shared';
+import { useUser } from '../context/UserContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
@@ -10,6 +11,7 @@ import Loading from '../components/Loading';
 const CategoryPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isQuizManager } = useUser();
   const [category, setCategory] = useState<QuizCategory | null>(null);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,25 +73,38 @@ const CategoryPage: React.FC = () => {
         <Link to="/" className="mb-4 inline-block text-sm text-primary-600 hover:text-primary-700">
           ← Back to Categories
         </Link>
-        <div className="flex items-center space-x-4">
-          <span className="text-5xl">{category.icon}</span>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{category.name}</h1>
-            <p className="text-gray-600">{category.description}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <span className="text-5xl">{category.icon}</span>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{category.name}</h1>
+              <p className="text-gray-600">{category.description}</p>
+            </div>
           </div>
+          {isQuizManager && (
+            <Button onClick={() => navigate('/manage/quizzes')}>
+              Manage Quizzes
+            </Button>
+          )}
         </div>
       </div>
 
       {quizzes.length === 0 ? (
         <Card>
-          <p className="text-center text-gray-600">No quizzes available in this category yet.</p>
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">No quizzes available in this category yet.</p>
+            {isQuizManager && (
+              <Button onClick={() => navigate('/manage/quizzes')}>
+                Create Quiz
+              </Button>
+            )}
+          </div>
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {quizzes.map((quiz) => (
             <Card
               key={quiz.id}
-              onClick={() => navigate(`/quiz/${quiz.id}`)}
               className="animate-slide-up"
             >
               <div className="mb-3 flex items-center justify-between">
@@ -104,7 +119,22 @@ const CategoryPage: React.FC = () => {
               </div>
               <h2 className="mb-2 text-xl font-bold text-gray-900">{quiz.title}</h2>
               <p className="mb-4 text-gray-600">{quiz.description}</p>
-              <Button className="w-full">Start Quiz</Button>
+              <div className="flex space-x-2">
+                <Button
+                  className="flex-1"
+                  onClick={() => navigate(`/quiz/${quiz.id}`)}
+                >
+                  Start Quiz
+                </Button>
+                {isQuizManager && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => navigate('/manage/quizzes')}
+                  >
+                    Edit
+                  </Button>
+                )}
+              </div>
             </Card>
           ))}
         </div>

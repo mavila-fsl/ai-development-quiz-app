@@ -8,6 +8,9 @@ A full-stack educational platform designed to help users test and reinforce thei
 - **Multiple Quiz Categories**: Agent Fundamentals, Prompt Engineering, and Model Selection & Context Management
 - **Interactive Quiz Experience**: Multiple-choice questions with immediate feedback and detailed explanations
 - **Progress Tracking**: Track scores, view history, and monitor performance across categories
+- **Role-Based Access Control**: Two user roles with distinct permissions:
+  - **Quiz Taker**: Take quizzes, view results, and track performance
+  - **Quiz Manager**: Create/edit/delete quiz content, manage categories and questions
 - **User Profiles**: Simple username-based accounts with persistent data
 - **Responsive Design**: Beautiful, mobile-friendly interface built with TailwindCSS
 - **AI-Enhanced Learning**: Optional Claude AI integration for personalized recommendations and enhanced explanations
@@ -107,7 +110,7 @@ npm run db:seed
 This creates the SQLite database and seeds it with:
 - 3 quiz categories
 - 3 quizzes with 5 questions each
-- 1 demo user
+- 2 demo users with different roles (see [User Roles](#user-roles) below)
 
 ### 4. Start Development Servers
 
@@ -146,6 +149,30 @@ npm run build    # Compile TypeScript
 npm start        # Run compiled server
 ```
 
+## User Roles
+
+The app implements role-based access control (RBAC) with two roles:
+
+### Quiz Taker (Default)
+- Browse quiz categories
+- Take quizzes and submit answers
+- View quiz results and explanations
+- Track personal statistics and performance
+- Cannot create or edit quiz content
+
+### Quiz Manager
+- All Quiz Taker permissions, plus:
+- Create, edit, and delete quiz categories
+- Create, edit, and delete quizzes
+- Manage quiz questions and answer options
+- Access quiz management dashboard
+
+**Demo Users**:
+| Username | Role | Password |
+|----------|------|----------|
+| `demo_user` | Quiz Taker | `TestPass123!` |
+| `quiz_manager` | Quiz Manager | `TestPass123!` |
+
 ## API Documentation
 
 ### Base URL
@@ -153,29 +180,44 @@ npm start        # Run compiled server
 
 ### Endpoints
 
-#### Users
-- `POST /api/users` - Create a new user
-- `GET /api/users/:id` - Get user by ID
+#### Users (Public)
+- `POST /api/users` - Create a new user (default role: Quiz Taker)
+- `POST /api/users/login` - User login
+- `POST /api/users/logout` - User logout
+- `GET /api/users/:id` - Get user profile
 - `GET /api/users/:id/stats` - Get user statistics
 
 #### Categories
-- `GET /api/categories` - Get all quiz categories
-- `GET /api/categories/:id` - Get category by ID
+- `GET /api/categories` - Get all categories (Authenticated)
+- `GET /api/categories/:id` - Get category details (Authenticated)
+- `POST /api/categories` - Create category (Quiz Manager only)
+- `PUT /api/categories/:id` - Update category (Quiz Manager only)
+- `DELETE /api/categories/:id` - Delete category (Quiz Manager only)
 
 #### Quizzes
-- `GET /api/quizzes` - Get all quizzes (optional: `?categoryId=<id>`)
-- `GET /api/quizzes/:id` - Get quiz by ID
-- `GET /api/quizzes/:id/questions` - Get quiz questions
+- `GET /api/quizzes` - Get all quizzes (Authenticated)
+- `GET /api/quizzes/:id` - Get quiz details (Authenticated)
+- `GET /api/quizzes/:id/questions` - Get quiz questions (Authenticated)
+- `POST /api/quizzes` - Create quiz (Quiz Manager only)
+- `PUT /api/quizzes/:id` - Update quiz (Quiz Manager only)
+- `DELETE /api/quizzes/:id` - Delete quiz (Quiz Manager only)
+
+#### Questions (Quiz Manager only)
+- `GET /api/questions` - Get questions with answers
+- `GET /api/questions/:id` - Get question details
+- `POST /api/questions` - Create question
+- `PUT /api/questions/:id` - Update question
+- `DELETE /api/questions/:id` - Delete question
 
 #### Quiz Attempts
-- `POST /api/attempts/start` - Start a quiz attempt
-- `POST /api/attempts/complete` - Complete and submit quiz
-- `GET /api/attempts/:id` - Get attempt by ID
-- `GET /api/attempts/user/:userId` - Get user's attempts
+- `POST /api/attempts/start` - Start quiz attempt (Authenticated)
+- `POST /api/attempts/complete` - Submit answers (Authenticated)
+- `GET /api/attempts/:id` - Get attempt results (Authenticated)
+- `GET /api/attempts/user/:userId` - Get user's attempts (Authenticated)
 
 #### AI Features
-- `POST /api/ai/recommendation` - Get personalized recommendations
-- `POST /api/ai/enhance-explanation` - Get AI-enhanced explanation
+- `POST /api/ai/recommendation` - Get recommendations (Authenticated)
+- `POST /api/ai/enhance-explanation` - Get enhanced explanation (Authenticated)
 
 ## Database Schema
 

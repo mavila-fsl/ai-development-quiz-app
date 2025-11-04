@@ -137,11 +137,18 @@ Located in `database/prisma/schema.prisma`:
 **Entry:** `client/src/main.tsx` → `App.tsx` (React Router)
 
 **Routing:**
-- `/` - HomePage (category selection)
-- `/category/:id` - CategoryPage (quiz list for category)
-- `/quiz/:id` - QuizPage (interactive quiz experience)
-- `/results/:attemptId` - ResultsPage (scored results with explanations)
-- `/dashboard` - DashboardPage (user stats and history)
+- `/` - HomePage (authentication, category selection)
+- `/unauthorized` - Unauthorized page (403 access denied)
+- `/category/:id` - CategoryPage (quiz list for category) [Protected]
+- `/quiz/:id` - QuizPage (interactive quiz experience) [Protected]
+- `/results/:attemptId` - ResultsPage (scored results with explanations) [Protected]
+- `/dashboard` - DashboardPage (user stats and history) [Protected]
+- `/manage` - ManagePage (quiz management dashboard) [Manager Only]
+
+**Role-Based Route Protection:**
+- Routes protected with `RoleProtectedRoute` component in `App.tsx`
+- Handles authentication checks and role validation
+- Redirects to `/unauthorized` if role lacks permission
 
 **State Management:**
 - UserContext (`client/src/context/UserContext.tsx`) - Global user state
@@ -158,6 +165,26 @@ Located in `database/prisma/schema.prisma`:
 - TailwindCSS for styling
 - Mobile-responsive design
 
+### Authorization
+
+**User Roles:**
+- `QUIZ_TAKER` - Default role, can take quizzes and view results
+- `QUIZ_MANAGER` - Can create/edit/delete quiz content
+
+**Implementation:**
+- Roles stored in User model in database
+- Included in JWT token payload for request validation
+- Validated on every request via `authMiddleware`
+- Backend enforces authorization via `requireRole()` middleware
+- Frontend enforces via `RoleProtectedRoute` component
+- Privilege escalation prevented: role cannot be changed via JWT
+
+**Key Files:**
+- `server/src/middleware/auth.ts` - JWT verification and role extraction
+- `server/src/middleware/authorization.ts` - Role-based middleware factory
+- `client/src/components/RoleProtectedRoute.tsx` - Frontend route protection
+- `client/src/context/UserContext.tsx` - Role helper methods
+
 ### Type Safety
 
 **Shared Types:** `shared/src/types.ts` - Single source of truth
@@ -166,6 +193,7 @@ Located in `database/prisma/schema.prisma`:
 - API response wrappers (ApiResponse<T>, PaginatedResponse<T>)
 - UI types (QuizResult, UserStats, CategoryPerformance)
 - AI types (AIRecommendation, AIEnhancedExplanation)
+- Authorization types (UserRole enum, role constants, error messages)
 
 All interfaces used consistently across client and server.
 
@@ -236,9 +264,24 @@ npm run db:seed
 1. Define DTO in `shared/src/types.ts`
 2. Create controller in `server/src/controllers/`
 3. Add validation middleware
-4. Register route in `server/src/routes/`
+4. Register route in `server/src/routes/`, applying:
+   - `authMiddleware` for authenticated endpoints
+   - `requireQuizManager` for manager-only endpoints
+   - `requireAuthenticated` for all authenticated users
 5. Import route in `server/src/routes/index.ts`
 6. Add client method in `client/src/services/api.ts`
+
+**For Manager-Only Endpoints:**
+```typescript
+router.post(
+  '/endpoint',
+  authMiddleware,
+  requireQuizManager,
+  [validation],
+  validate,
+  controllerFunction
+);
+```
 
 ### Add New Page
 1. Create component in `client/src/pages/`

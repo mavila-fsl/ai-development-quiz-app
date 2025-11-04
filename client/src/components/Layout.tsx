@@ -8,12 +8,27 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout } = useUser();
+  const { user, logout, isQuizManager, isQuizTaker } = useUser();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  // Get role display text
+  const getRoleBadge = () => {
+    if (!user) return null;
+
+    if (isQuizManager) {
+      return <span className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">Manager</span>;
+    }
+
+    if (isQuizTaker) {
+      return <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">Taker</span>;
+    }
+
+    return null;
   };
 
   return (
@@ -29,14 +44,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <nav className="flex items-center space-x-4">
               {user && (
                 <>
-                  <Link
-                    to="/dashboard"
-                    className="text-sm font-medium text-gray-700 transition-colors hover:text-primary-600"
-                  >
-                    Dashboard
-                  </Link>
+                  {/* Show Dashboard link only for Quiz Takers */}
+                  {isQuizTaker && (
+                    <Link
+                      to="/dashboard"
+                      className="text-sm font-medium text-gray-700 transition-colors hover:text-primary-600"
+                    >
+                      Dashboard
+                    </Link>
+                  )}
+
+                  {/* Show Manage link only for Quiz Managers */}
+                  {isQuizManager && (
+                    <Link
+                      to="/manage"
+                      className="text-sm font-medium text-gray-700 transition-colors hover:text-primary-600"
+                    >
+                      Manage
+                    </Link>
+                  )}
+
                   <span className="text-sm text-gray-500">|</span>
-                  <span className="text-sm text-gray-700">👤 {user.username}</span>
+
+                  {/* User info with role badge */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-700">👤 {user.username}</span>
+                    {getRoleBadge()}
+                  </div>
+
                   <Button variant="secondary" onClick={handleLogout}>
                     Logout
                   </Button>

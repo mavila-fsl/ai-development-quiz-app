@@ -1,7 +1,14 @@
+// User Role Types
+export enum UserRole {
+  QUIZ_TAKER = 'QUIZ_TAKER',
+  QUIZ_MANAGER = 'QUIZ_MANAGER',
+}
+
 // User Types
 export interface User {
   id: string;
   username: string;
+  role: UserRole;
   createdAt: Date;
 }
 
@@ -24,6 +31,18 @@ export interface QuizCategory {
   createdAt: Date;
 }
 
+export interface CreateCategoryDto {
+  name: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface UpdateCategoryDto {
+  name?: string;
+  description?: string;
+  icon?: string;
+}
+
 // Quiz Types
 export interface Quiz {
   id: string;
@@ -36,20 +55,54 @@ export interface Quiz {
   questions?: Question[];
 }
 
+export interface CreateQuizDto {
+  title: string;
+  description?: string;
+  categoryId: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export interface UpdateQuizDto {
+  title?: string;
+  description?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+}
+
 // Question Types
 export interface QuestionOption {
   id: string;
   text: string;
+  explanation?: string;
 }
 
 export interface Question {
   id: string;
   quizId: string;
   question: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
   options: QuestionOption[];
   correctAnswer: string;
   explanation: string;
   order: number;
+}
+
+export interface CreateQuestionDto {
+  question: string;
+  quizId: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  options: QuestionOption[];
+  correctAnswer: string;
+  explanation?: string;
+  order?: number;
+}
+
+export interface UpdateQuestionDto {
+  question?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  options?: QuestionOption[];
+  correctAnswer?: string;
+  explanation?: string;
+  order?: number;
 }
 
 // Quiz Attempt Types

@@ -1,14 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@ai-quiz-app/shared';
+import { User, UserRole } from '@ai-quiz-app/shared';
 import { createUser as createUserApi, loginUser as loginUserApi, logoutUser as logoutUserApi, getUser } from '../services/api';
 
 interface UserContextType {
   user: User | null;
   loading: boolean;
+  isQuizManager: boolean;
+  isQuizTaker: boolean;
   setUser: (user: User | null) => void;
   createUser: (username: string, password: string) => Promise<User>;
   loginUser: (username: string, password: string) => Promise<User>;
   logout: () => void;
+  hasRole: (role: UserRole) => boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -72,8 +75,27 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Helper function to check if user has a specific role
+  const hasRole = (role: UserRole): boolean => {
+    return user?.role === role;
+  };
+
+  // Computed properties for role checks
+  const isQuizManager = hasRole(UserRole.QUIZ_MANAGER);
+  const isQuizTaker = hasRole(UserRole.QUIZ_TAKER);
+
   return (
-    <UserContext.Provider value={{ user, loading, setUser, createUser, loginUser, logout }}>
+    <UserContext.Provider value={{
+      user,
+      loading,
+      isQuizManager,
+      isQuizTaker,
+      setUser,
+      createUser,
+      loginUser,
+      logout,
+      hasRole
+    }}>
       {children}
     </UserContext.Provider>
   );
@@ -86,3 +108,5 @@ export const useUser = () => {
   }
   return context;
 };
+
+export { UserContext };
